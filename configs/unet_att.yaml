@@ -1,15 +1,15 @@
 dataloader:
   num_workers: 4
-  batch_size: 8
+  batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: 'dataset/Starting Kit Pixel/'
-    ann_file: 'dataloader/annotation/fold0.pkl'
+    data_folder: 'dataset/Starting Kit Pixel2/'
+    ann_file: 'dataloader/annotation/dataset2.pkl'
 
 solver:
   loss: dice
   optimizer: 'sgd'
-  max_epoch: 200
+  max_epoch: 10
   base_lr: 0.02
   momentum: 0.9
   weight_decay: 1.0e-5
@@ -19,9 +19,9 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'cuda:0'
+  device: 'mps'
   mode: 'train'
   ckpt: None
 
 load_from: null
-output_dir: 'output/ex1/'
+output_dir: 'output/ex2/'

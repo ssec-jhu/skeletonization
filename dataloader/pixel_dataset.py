@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 import sys
-import pickle5 as pickle
+import pickle
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 import random
 from glob import glob
