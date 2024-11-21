@@ -6,6 +6,7 @@ import albumentations as A
 import pickle
 import imutils
 
+img_size = 1024 # 256
 class Normalize(object):
     def __call__(self, sample):
         image, label = sample
@@ -19,9 +20,9 @@ class Normalize(object):
         label[label >= 0.5] = 1
         label[label < 0.5] = 0
 
-        label_128 = cv2.resize(label, (128, 128), interpolation=cv2.INTER_AREA)
-        label_64 = cv2.resize(label, (64, 64), interpolation=cv2.INTER_AREA)
-        label_32 = cv2.resize(label, (32, 32), interpolation=cv2.INTER_AREA)
+        label_128 = cv2.resize(label, (int(img_size/2), int(img_size/2)), interpolation=cv2.INTER_AREA)
+        label_64 = cv2.resize(label, (int(img_size/4), int(img_size/4)), interpolation=cv2.INTER_AREA)
+        label_32 = cv2.resize(label, (int(img_size/8), int(img_size/8)), interpolation=cv2.INTER_AREA)
 
         # label_128[label_128>0] = 1
         # label_64[label_64>0] = 1
@@ -38,6 +39,14 @@ class Flip(object):
             image = cv2.flip(image, mode)
             label = cv2.flip(label, mode)
 
+        # # Display the image
+        # cv2.imshow('Image Window', image)
+        # cv2.imshow('Label Window', label)
+        # # Wait for a key press indefinitely or for a specific amount of time
+        # cv2.waitKey(0)  # Waits indefinitely; use cv2.waitKey(1000) to wait 1 second
+        # # Destroy all OpenCV windows
+        # cv2.destroyAllWindows()
+        
         # cv2.imwrite(f'temp/{random.random()}.png', (image-label))
         return (image, label)
 
@@ -148,7 +157,7 @@ class Shift(object):
 
         image_clipped = image[:, shift_left:]
         label_clipped = label[:, shift_left:]
-        pad = np.zeros((256, shift_left))
+        pad = np.zeros((img_size, shift_left))
 
         image_shifted = np.concatenate([image_clipped, pad], axis=1)
         label_shifted = np.concatenate([label_clipped, pad], axis=1)
@@ -156,11 +165,11 @@ class Shift(object):
         return image_shifted, label_shifted
 
     def shift_right(self, image, label, extRight):
-        shift_right = random.randint(extRight, 255)
+        shift_right = random.randint(extRight, img_size-1)
 
         image_clipped = image[:, :shift_right]
         label_clipped = label[:, :shift_right]
-        pad = np.zeros((256, 256 - shift_right))
+        pad = np.zeros((img_size, img_size - shift_right))
 
         image_shifted = np.concatenate([pad, image_clipped], axis=1)
         label_shifted = np.concatenate([pad, label_clipped], axis=1)
@@ -172,7 +181,7 @@ class Shift(object):
 
         image_clipped = image[shift_top:, :]
         label_clipped = label[shift_top:, :]
-        padd = np.zeros((shift_top, 256))
+        padd = np.zeros((shift_top, img_size))
 
         image_shifted = np.concatenate([padd, image_clipped], axis=0)
         label_shifted = np.concatenate([padd, label_clipped], axis=0)
@@ -180,8 +189,8 @@ class Shift(object):
         return image_shifted, label_shifted
 
     def shift_bot(self, image, label, extBot):
-        shift_bot = random.randint(extBot, 256)
-        padd = np.zeros((256-shift_bot,256))
+        shift_bot = random.randint(extBot, img_size)
+        padd = np.zeros((img_size-shift_bot,img_size))
 
         img_clipped = image[:shift_bot,:]
         img_shifted = np.concatenate([padd,img_clipped], axis=0)
@@ -203,11 +212,11 @@ class Shift2(object):
 
         # shift
         high, width = image_cropped.shape
-        x = random.randint(0, 256 - width)
-        y = random.randint(0, 256 - high)
+        x = random.randint(0, img_size - width)
+        y = random.randint(0, img_size - high)
 
-        image_padded = np.zeros((256, 256))
-        label_padded = np.zeros((256, 256))
+        image_padded = np.zeros((img_size, img_size))
+        label_padded = np.zeros((img_size, img_size))
         image_padded[y:y+high, x:x+width] = image_cropped
         label_padded[y:y+high, x:x+width] = label_cropped
 
@@ -229,9 +238,9 @@ class Shift2(object):
         # extBot = tuple(c[c[:, :, 1].argmax()][0])[1]
 
         extLeft = max(0, tuple(c[c[:, :, 0].argmin()][0])[0] - 5)
-        extRight = min(256, tuple(c[c[:, :, 0].argmax()][0])[0] + 5)
+        extRight = min(img_size, tuple(c[c[:, :, 0].argmax()][0])[0] + 5)
         extTop = max(0, tuple(c[c[:, :, 1].argmin()][0])[1] - 5)
-        extBot = min(256, tuple(c[c[:, :, 1].argmax()][0])[1] + 5)
+        extBot = min(img_size, tuple(c[c[:, :, 1].argmax()][0])[1] + 5)
 
         return extLeft, extRight, extTop, extBot
 
