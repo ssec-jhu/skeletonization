@@ -7,7 +7,7 @@ from model import build_model
 from pathlib import Path
 from glob import glob
 import cv2
-import pickle5 as pickle
+import pickle
 import numpy as np
 from sklearn.metrics import f1_score
 
@@ -42,7 +42,7 @@ class Tester:
             image_flip__1 = cv2.flip(image_ori, -1)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1])
 
-            image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
+            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
                 pred = torch.sigmoid(pred)
@@ -102,7 +102,7 @@ class Tester:
             image_rotate_180 = cv2.rotate(image_ori, cv2.ROTATE_180)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1, image_rotate_90cc, image_rotate_90c, image_rotate_180])
 
-            image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
+            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
                 pred = torch.sigmoid(pred)

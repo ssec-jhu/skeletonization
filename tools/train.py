@@ -71,11 +71,11 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, label_128, label_64, label_32 in tqdm(self.train_loader):
-            input = input.to(self.device)
-            target = target.to(self.device)
-            label_128 = label_128.to(self.device)
-            label_64 = label_64.to(self.device)
-            label_32 = label_32.to(self.device)
+            input = input.to(torch.float32).to(self.device)
+            target = target.to(torch.float32).to(self.device)
+            label_128 = label_128.to(torch.float32).to(self.device)
+            label_64 = label_64.to(torch.float32).to(self.device)
+            label_32 = label_32.to(torch.float32).to(self.device)
 
             self.optimizer.zero_grad()
             output, aux_128, aux_64, aux_32 = self.model(input)
@@ -121,8 +121,8 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, _, _, _ in tqdm(self.val_loader):
-            input = input.to(self.device)
-            target = target.to(self.device)
+            input = input.to(torch.float32).to(self.device)
+            target = target.to(torch.float32).to(self.device)
 
             with torch.no_grad():
                 output, _, _, _ = self.model(input)
