@@ -19,7 +19,7 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'mps'
+  device: 'cuda'
   mode: 'train'
   ckpt: None
 
