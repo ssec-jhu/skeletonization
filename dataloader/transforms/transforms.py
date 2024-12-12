@@ -7,16 +7,18 @@ import pickle
 import imutils
 
 img_size = 1024 # 256
+max_grey_level = 65535
+
 class Normalize(object):
     def __call__(self, sample):
         image, label = sample
-        image = image / 255.
+        image = image / float(max_grey_level)
         image = np.expand_dims(image, axis=0)
 
         # kernel = np.ones((5,5), np.uint8)
         # label = cv2.dilate(label, kernel, iterations=1)
 
-        label = label / 255.
+        label = label / float(max_grey_level)
         label[label >= 0.5] = 1
         label[label < 0.5] = 0
 
@@ -137,7 +139,7 @@ class Shift(object):
 
     def get_extreme_points(self, image):
         gray = cv2.GaussianBlur(image, (5, 5), 0)
-        thresh = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.threshold(gray, 145, max_grey_level, cv2.THRESH_BINARY)[1]
         thresh = cv2.erode(thresh, None, iterations=2)
         thresh = cv2.dilate(thresh, None, iterations=2)
 
@@ -224,7 +226,7 @@ class Shift2(object):
 
     def get_extreme_points(self, image):
         gray = cv2.GaussianBlur(image, (5, 5), 0)
-        thresh = cv2.threshold(gray, 45, 255, cv2.THRESH_BINARY)[1]
+        thresh = cv2.threshold(gray, 145, max_grey_level, cv2.THRESH_BINARY)[1]
         thresh = cv2.erode(thresh, None, iterations=2)
         thresh = cv2.dilate(thresh, None, iterations=2)
 

@@ -3,8 +3,8 @@ dataloader:
   batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: 'dataset/Starting Kit Pixel2/'
-    ann_file: 'dataloader/annotation/dataset2.pkl'
+    data_folder: 'dataset/Starting Kit Pixel/'
+    ann_file: 'dataloader/annotation/dataset.pkl'
 
 solver:
   loss: dice
@@ -19,9 +19,9 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'mps'
+  device: 'cuda'
   mode: 'train'
   ckpt: None
 
 load_from: null
-output_dir: 'output/ex2/'
+output_dir: 'output/ex/'

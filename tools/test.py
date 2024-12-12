@@ -11,6 +11,8 @@ import pickle
 import numpy as np
 from sklearn.metrics import f1_score
 
+max_grey_level = 65535
+
 class Tester:
     def __init__(self, cfgs):
         self.cfgs = cfgs
@@ -34,8 +36,8 @@ class Tester:
         
         print('testing on validation set ... ')
         for val_image in ann['val']:
-            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
-            target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_image}')[:,:,0] / 255.
+            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / float(max_grey_level)
+            target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_image}')[:,:,0] / float(max_grey_level)
 
             image_flip_0 = cv2.flip(image_ori, 0)
             image_flip_1 = cv2.flip(image_ori, 1)
@@ -78,7 +80,7 @@ class Tester:
             pred[pred >= threshold] = 1
             pred[pred < threshold] = 0
 
-            cat = np.concatenate([pred, target], axis=1)*255
+            cat = np.concatenate([pred, target], axis=1) * float(max_grey_level)
             cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{val_image}', cat)
 
         return threshold
@@ -92,7 +94,7 @@ class Tester:
             image_name = image_path.split('/')[-1]
 
             image_ori = cv2.imread(image_path)
-            image_ori = (image_ori[:,:,0]/255.)
+            image_ori = (image_ori[:,:,0]/float(max_grey_level))
 
             image_flip_0 = cv2.flip(image_ori, 0)
             image_flip_1 = cv2.flip(image_ori, 1)
@@ -119,7 +121,7 @@ class Tester:
             pred = np.mean([pred_ori, pred_flip_0, pred_flip_1, pred_flip__1, pred_rotate_90cc, pred_rotate_90c, pred_rotate_180], axis=0)
             pred = np.stack([pred, pred, pred], axis=2)
 
-            pred[pred >= threshold] = 255
+            pred[pred >= threshold] = max_grey_level
             pred[pred < threshold] = 0
             cv2.imwrite(f'{self.cfgs.output_dir}/submission/{image_name}', pred)
 
