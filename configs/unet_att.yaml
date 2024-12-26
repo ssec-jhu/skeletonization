@@ -1,15 +1,15 @@
 dataloader:
-  num_workers: 4
-  batch_size: 2
+  num_workers: 0
+  batch_size: 4
   dataset:
     name: 'pixel'
-    data_folder: 'dataset/Starting Kit Pixel2/'
+    data_folder: '../../../../ssec_neural_morphology/Simulations_8bit_Size1000/Dataset/TrainingKit/'
     ann_file: 'dataloader/annotation/dataset2.pkl'
 
 solver:
   loss: dice
   optimizer: 'sgd'
-  max_epoch: 10
+  max_epoch: 100
   base_lr: 0.02
   momentum: 0.9
   weight_decay: 1.0e-5

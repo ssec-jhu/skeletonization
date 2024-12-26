@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Change working directory
-cd /home/idies/workspace/Storage/vkluzner/persistent/skeletonization
-
-pip install torchvision albumentations easydict
-
-# Run the Python script
-#skelneton/bin/python main.py
-/home/idies/miniconda3/bin/python main.py
+source activate py312
+pip install tqdm opencv-python-headless albumentations imutils scikit-learn easydict --upgrade
+python main.py

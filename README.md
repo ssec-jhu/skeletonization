@@ -10,7 +10,7 @@ Our solution includes:
 
 ## 2. Installation
 1. Clone https://github.com/namdvt/skeletonization
-2. python 3, cv2, pytorch > 1.2, torchvision, tqdm, albumentations, easydict, pickle
+2. python 3, cv2, pytorch > 1.2, torchvision, tqdm, albumentations, easydict, pickle, imutils
 
 ## 3. Training & Testing
 1. Place the SkelNetOn dataset into 'dataset/Starting Kit Pixel/'

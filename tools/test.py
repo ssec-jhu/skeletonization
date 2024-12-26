@@ -20,7 +20,7 @@ class Tester:
         Path(f'{self.cfgs.output_dir}/evaluation').mkdir(parents=True, exist_ok=True)
 
         print(f'load ckpt from {cfgs.output_dir}')
-        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
+        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', weights_only=False)
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
 
