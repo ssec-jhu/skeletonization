@@ -71,6 +71,11 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, label_128, label_64, label_32 in tqdm(self.train_loader):
+            #input = input.to(self.device)
+            #target = target.to(self.device)
+            #label_128 = label_128.to(self.device)
+            #label_64 = label_64.to(self.device)
+            #label_32 = label_32.to(self.device)
             input = input.to(torch.float32).to(self.device)
             target = target.to(torch.float32).to(self.device)
             label_128 = label_128.to(torch.float32).to(self.device)
@@ -89,8 +94,8 @@ class Trainer:
             pred = output.clone()
             pred[pred >= 0.62] = 1
             pred[pred < 0.62] = 0
-            #runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu().long())
-            runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
+            runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu().long())
+            #runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
 
             # auxiliary losses
             soft_dice_loss_128, bce_loss_128 = self.loss_fn(aux_128, label_128)
@@ -122,6 +127,8 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, _, _, _ in tqdm(self.val_loader):
+            #input = input.to(self.device)
+            #target = target.to(self.device)
             input = input.to(torch.float32).to(self.device)
             target = target.to(torch.float32).to(self.device)
 
@@ -137,8 +144,8 @@ class Trainer:
             pred = output.clone()
             pred[pred >= 0.62] = 1
             pred[pred < 0.62] = 0
-            #runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu())
-            runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
+            runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu())
+            #runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
             
         epoch_dice_loss = running_dice_loss / len(self.val_loader)
         epoch_bce_loss = running_bce_loss / len(self.val_loader)
