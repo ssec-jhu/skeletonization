@@ -1,15 +1,15 @@
 dataloader:
-  num_workers: 0
-  batch_size: 4
+  num_workers: 4
+  batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: '../../../../ssec_neural_morphology/Simulations_8bit_Size1000/Dataset/TrainingKit/'
-    ann_file: 'dataloader/annotation/dataset2.pkl'
+    data_folder: '../../../OneDrive/Neural Morphology - Adkins - Yale/Simulations/Simulations_16bit_Size1024/dataset/Starting Kit Pixel'
+    ann_file: 'dataloader/annotation/dataset3.pkl'
 
 solver:
   loss: dice
   optimizer: 'sgd'
-  max_epoch: 100
+  max_epoch: 10
   base_lr: 0.02
   momentum: 0.9
   weight_decay: 1.0e-5
@@ -19,9 +19,9 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'cuda'
+  device: 'mps'
   mode: 'train'
   ckpt: None
 
 load_from: null
-output_dir: 'output/ex2/'
+output_dir: 'output/ex3/'
