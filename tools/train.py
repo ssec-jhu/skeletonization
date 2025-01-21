@@ -34,7 +34,8 @@ class Trainer:
 
         if cfgs.load_from is not None:
             print(f'load ckpt from {cfgs.load_from}')
-            ckpt = torch.load(cfgs.load_from)
+            #ckpt = torch.load(cfgs.load_from)
+            ckpt = torch.load(cfgs.load_from, weights_only=False)
             self.model.load_state_dict(ckpt['model_state_dict'], strict=False)
         else:
             print('train from scratch')

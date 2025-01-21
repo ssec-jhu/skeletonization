@@ -20,6 +20,7 @@ class Tester:
         Path(f'{self.cfgs.output_dir}/evaluation').mkdir(parents=True, exist_ok=True)
 
         print(f'load ckpt from {cfgs.output_dir}')
+        #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
         ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', weights_only=False)
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
@@ -34,7 +35,12 @@ class Tester:
         
         print('testing on validation set ... ')
         for val_image in ann['val']:
-            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
+            #image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
+            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
+            #cv2.imshow('Image after', image_ori)
+            #cv2.waitKey(0)  # Waits indefinitely; use cv2.waitKey(1000) to wait 1 second
+            #cv2.destroyAllWindows()
             target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_image}')[:,:,0] / 255.
 
             image_flip_0 = cv2.flip(image_ori, 0)
@@ -42,6 +48,7 @@ class Tester:
             image_flip__1 = cv2.flip(image_ori, -1)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1])
 
+            #image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
             image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
@@ -88,12 +95,14 @@ class Tester:
         threshold = self.find_threshold()
 
         print(f'inferencing with threshold = {threshold}')
-        for image_path in (glob(f'{self.cfgs.dataloader.dataset.data_folder}/img_test_shape/*.png')):
+        for image_path in (glob(f'{self.cfgs.dataloader.dataset.data_folder}/img_test_shape/*.pgm')):
             image_name = image_path.split('/')[-1]
 
-            image_ori = cv2.imread(image_path)
-            image_ori = (image_ori[:,:,0]/255.)
-
+            #image_ori = cv2.imread(image_path)
+            #image_ori = (image_ori[:,:,0]/255.)
+            image_ori = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.convertScaleAbs(image_ori, alpha=1.0 / image_ori.max())
+            
             image_flip_0 = cv2.flip(image_ori, 0)
             image_flip_1 = cv2.flip(image_ori, 1)
             image_flip__1 = cv2.flip(image_ori, -1)
@@ -102,6 +111,7 @@ class Tester:
             image_rotate_180 = cv2.rotate(image_ori, cv2.ROTATE_180)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1, image_rotate_90cc, image_rotate_90c, image_rotate_180])
 
+            #image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
             image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
