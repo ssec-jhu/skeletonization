@@ -3,8 +3,8 @@ dataloader:
   batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: '../../../OneDrive/Neural Morphology - Adkins - Yale/Simulations/Simulations_16bit_Size1024/dataset/Starting Kit Pixel'
-    ann_file: 'dataloader/annotation/dataset3.pkl'
+    data_folder: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/TrainingKit'
+    ann_file: 'dataloader/annotation/dataset4.pkl'
 
 solver:
   loss: dice
@@ -19,9 +19,8 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'mps'
   mode: 'train'
   ckpt: None
 
-load_from: 'output/ex3/ckpt_init10.pth'
-output_dir: 'output/ex3/'
+load_from: null
+output_dir: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/output/ex4/'

@@ -22,8 +22,23 @@ class PrettyLog():
 
 class Trainer:
     def __init__(self, cfgs):
+        
+        # Find available GPU
+        if torch.backends.mps.is_available(): # Check if PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
+            print("MPS is available!")
+            if torch.backends.mps.is_built():
+                print("MPS (Metal Performance Shader) is built in!")    
+            device = "mps"
+        elif torch.cuda.is_available(): # Check if PyTorch has access to CUDA (Win or Linux's GPU architecture)
+            print("CUDA is available!")
+            device = "cuda"
+        else:
+            print("Only CPU is available!")
+            device = "cpu"
+        print(f"Using device: {device}")
+
         self.cfgs = cfgs
-        self.device = cfgs.model.device
+        self.device = device # cfgs.model.device
         self.train_loader, self.val_loader = build_dataloader(cfgs.dataloader)
         self.model = build_model(cfgs.model)
         self.loss_fn = build_loss(cfgs.solver)

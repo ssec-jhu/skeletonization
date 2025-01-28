@@ -13,15 +13,31 @@ from sklearn.metrics import f1_score
 
 class Tester:
     def __init__(self, cfgs):
+        
+        # Find available GPU
+        if torch.backends.mps.is_available(): # Check if PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
+            print("MPS is available!")
+            if torch.backends.mps.is_built():
+                print("MPS (Metal Performance Shader) is built in!")    
+            device = "mps"
+        elif torch.cuda.is_available(): # Check if PyTorch has access to CUDA (Win or Linux's GPU architecture)
+            print("CUDA is available!")
+            device = "cuda"
+        else:
+            print("Only CPU is available!")
+            device = "cpu"
+        print(f"Using device: {device}")
+
         self.cfgs = cfgs
-        self.device = cfgs.model.device
+        self.device = device # cfgs.model.device
         self.model = build_model(cfgs.model)
         Path(f'{self.cfgs.output_dir}/submission').mkdir(parents=True, exist_ok=True)
         Path(f'{self.cfgs.output_dir}/evaluation').mkdir(parents=True, exist_ok=True)
 
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
-        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', weights_only=False)
+        #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device('cpu'), weights_only=False)
+        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=self.device, weights_only=False)
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
 
@@ -48,8 +64,8 @@ class Tester:
             image_flip__1 = cv2.flip(image_ori, -1)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1])
 
-            #image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
-            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
+            #image = torch.tensor(image).unsqueeze(1).to(self.device)
+            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
                 pred = torch.sigmoid(pred)
@@ -85,7 +101,13 @@ class Tester:
             pred[pred >= threshold] = 1
             pred[pred < threshold] = 0
 
+            # Set the difference
+            diff = np.zeros_like(target, dtype=np.uint8)
+            diff[((pred == 1) & (target == 1)) | ((pred == 0) & (target == 0))] = 128  # Both have the same value
+            diff[(pred == 1) & (target == 0)] = 255  # Appears in prediction, missing in target
+            diff[(pred == 0) & (target == 1)] = 0      # Missing in prediction, appears in target
             cat = np.concatenate([pred, target], axis=1)*255
+            cat = np.concatenate([cat, diff], axis=1)
             cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{val_image}', cat)
 
         return threshold
@@ -93,9 +115,13 @@ class Tester:
 
     def infer_tta_6(self):
         threshold = self.find_threshold()
-
+        #threshold = 74
         print(f'inferencing with threshold = {threshold}')
-        for image_path in (glob(f'{self.cfgs.dataloader.dataset.data_folder}/img_test_shape/*.pgm')):
+        
+        
+        #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
+        test_list = []
+        for image_path in test_list:
             image_name = image_path.split('/')[-1]
 
             #image_ori = cv2.imread(image_path)
@@ -111,8 +137,8 @@ class Tester:
             image_rotate_180 = cv2.rotate(image_ori, cv2.ROTATE_180)
             image = np.stack([image_ori, image_flip_0, image_flip_1, image_flip__1, image_rotate_90cc, image_rotate_90c, image_rotate_180])
 
-            #image = torch.tensor(image).unsqueeze(1).to(self.cfgs.model.device)
-            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.cfgs.model.device)
+            #image = torch.tensor(image).unsqueeze(1).to(self.device)
+            image = torch.tensor(image).unsqueeze(1).to(torch.float32).to(self.device)
             with torch.no_grad():
                 pred, _, _, _ = self.model(image)
                 pred = torch.sigmoid(pred)
