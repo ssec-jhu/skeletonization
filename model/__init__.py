@@ -6,7 +6,7 @@ def build_model(cfg):
     if cfg.name == 'unet_att':
         model = UnetAttention()
     else:
-        print("unsupport model type")
+        print("Unsupported model type")
         model = None
 
     model = model.to(cfg.device)       
