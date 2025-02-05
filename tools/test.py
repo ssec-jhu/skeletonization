@@ -1,3 +1,4 @@
+import os
 import torch
 import sys
 from tqdm import tqdm
@@ -30,6 +31,7 @@ class Tester:
 
         self.cfgs = cfgs
         self.device = device # cfgs.model.device
+        cfgs.model.device = device
         self.model = build_model(cfgs.model)
         Path(f'{self.cfgs.output_dir}/submission').mkdir(parents=True, exist_ok=True)
         Path(f'{self.cfgs.output_dir}/evaluation').mkdir(parents=True, exist_ok=True)
@@ -37,7 +39,7 @@ class Tester:
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device('cpu'), weights_only=False)
-        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=self.device, weights_only=False)
+        ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device(self.device), weights_only=False)
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
 
@@ -97,18 +99,42 @@ class Tester:
         print(f'best f1 score is {f1s.max()} at threshold = {threshold}')
 
         # write valid results
+        diff_pred_arr = list()
+        diff_target_arr = list()
         for val_image, pred, target in zip(val_images, preds, targets):
+            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()).astype(np.uint8)
+            
             pred[pred >= threshold] = 1
             pred[pred < threshold] = 0
-
-            # Set the difference
+            pred = pred.astype(np.uint8) * 255
+            
+            target = (target * 255).astype(np.uint8)
+            
+            cat = np.concatenate([image_ori, pred, target], axis=1)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_0.tif"}', cat) #, cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
+            
+            # Set the differences
             diff = np.zeros_like(target, dtype=np.uint8)
-            diff[((pred == 1) & (target == 1)) | ((pred == 0) & (target == 0))] = 128  # Both have the same value
-            diff[(pred == 1) & (target == 0)] = 255  # Appears in prediction, missing in target
-            diff[(pred == 0) & (target == 1)] = 0      # Missing in prediction, appears in target
-            cat = np.concatenate([pred, target], axis=1)*255
-            cat = np.concatenate([cat, diff], axis=1)
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{val_image}', cat)
+            diff[((pred == 255) & (target == 255)) | ((pred == 0) & (target == 0))] = 128  # Both have the same value
+            diff[(pred == 255) & (target == 0)] = 255  # Appears in prediction, missing in target
+            diff[(pred == 0) & (target == 255)] = 0      # Missing in prediction, appears in target
+            diff = np.stack([diff] * 3, axis=-1)
+            
+            diff_pred = np.stack([pred] * 3, axis=-1).astype(np.uint8)       
+            diff_pred[(pred == 255) & (target == 0)] = [255, 0, 0]  # Appears in prediction, missing in target
+            diff_pred_arr.append(np.sum(np.all(diff_pred == [255, 0, 0], axis=-1)))
+
+            diff_target = np.stack([target] * 3, axis=-1).astype(np.uint8)
+            diff_target[(pred == 0) & (target == 255)] = [255, 0, 0]  # Missing in prediction, appears in target
+            diff_target_arr.append(np.sum(np.all(diff_target == [255, 0, 0], axis=-1)))
+            
+            diff = np.concatenate([diff, diff_pred, diff_target], axis=1)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_1.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
+            
+            cat = np.stack([cat] * 3, axis=-1)
+            cat = np.concatenate([cat, diff], axis=0)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
 
         return threshold
 
