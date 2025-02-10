@@ -22,8 +22,23 @@ class PrettyLog():
 
 class Trainer:
     def __init__(self, cfgs):
+        
+        # Find available GPU
+        if torch.backends.mps.is_available(): # Check if PyTorch has access to MPS (Metal Performance Shader, Apple's GPU architecture)
+            print("MPS is available!")
+            if torch.backends.mps.is_built():
+                print("MPS (Metal Performance Shader) is built in!")    
+            device = "mps"
+        elif torch.cuda.is_available(): # Check if PyTorch has access to CUDA (Win or Linux's GPU architecture)
+            print("CUDA is available!")
+            device = "cuda"
+        else:
+            print("Only CPU is available!")
+            device = "cpu"
+        print(f"Using device: {device}")
+
         self.cfgs = cfgs
-        self.device = cfgs.model.device
+        self.device = device # cfgs.model.device
         self.train_loader, self.val_loader = build_dataloader(cfgs.dataloader)
         self.model = build_model(cfgs.model)
         self.loss_fn = build_loss(cfgs.solver)
@@ -34,7 +49,8 @@ class Trainer:
 
         if cfgs.load_from is not None:
             print(f'load ckpt from {cfgs.load_from}')
-            ckpt = torch.load(cfgs.load_from)
+            #ckpt = torch.load(cfgs.load_from)
+            ckpt = torch.load(cfgs.load_from, weights_only=False)
             self.model.load_state_dict(ckpt['model_state_dict'], strict=False)
         else:
             print('train from scratch')
@@ -71,11 +87,16 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, label_128, label_64, label_32 in tqdm(self.train_loader):
-            input = input.to(self.device)
-            target = target.to(self.device)
-            label_128 = label_128.to(self.device)
-            label_64 = label_64.to(self.device)
-            label_32 = label_32.to(self.device)
+            #input = input.to(self.device)
+            #target = target.to(self.device)
+            #label_128 = label_128.to(self.device)
+            #label_64 = label_64.to(self.device)
+            #label_32 = label_32.to(self.device)
+            input = input.to(torch.float32).to(self.device)
+            target = target.to(torch.float32).to(self.device)
+            label_128 = label_128.to(torch.float32).to(self.device)
+            label_64 = label_64.to(torch.float32).to(self.device)
+            label_32 = label_32.to(torch.float32).to(self.device)
 
             self.optimizer.zero_grad()
             output, aux_128, aux_64, aux_32 = self.model(input)
@@ -90,6 +111,7 @@ class Trainer:
             pred[pred >= 0.62] = 1
             pred[pred < 0.62] = 0
             runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu().long())
+            #runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
 
             # auxiliary losses
             soft_dice_loss_128, bce_loss_128 = self.loss_fn(aux_128, label_128)
@@ -121,8 +143,10 @@ class Trainer:
         running_bce_loss = 0.0
         runnning_acc = 0.0
         for input, target, _, _, _ in tqdm(self.val_loader):
-            input = input.to(self.device)
-            target = target.to(self.device)
+            #input = input.to(self.device)
+            #target = target.to(self.device)
+            input = input.to(torch.float32).to(self.device)
+            target = target.to(torch.float32).to(self.device)
 
             with torch.no_grad():
                 output, _, _, _ = self.model(input)
@@ -137,7 +161,8 @@ class Trainer:
             pred[pred >= 0.62] = 1
             pred[pred < 0.62] = 0
             runnning_acc += f1_score(pred.view(-1).detach().cpu(), target.view(-1).cpu())
-
+            #runnning_acc += f1_score(pred.view(-1).detach().cpu().numpy(), target.detach().view(-1).cpu().numpy())
+            
         epoch_dice_loss = running_dice_loss / len(self.val_loader)
         epoch_bce_loss = running_bce_loss / len(self.val_loader)
         epoch_acc = runnning_acc / len(self.val_loader)

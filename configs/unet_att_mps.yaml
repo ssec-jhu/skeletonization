@@ -19,9 +19,8 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'none'
   mode: 'train'
   ckpt: None
 
 load_from: null
-output_dir: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/output/ex5'
+output_dir: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/output/ex4/'
