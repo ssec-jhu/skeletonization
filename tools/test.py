@@ -102,6 +102,7 @@ class Tester:
         diff_pred_arr = list()
         diff_target_arr = list()
         for val_image, pred, target in zip(val_images, preds, targets):
+            print(f'Writing {val_image} ...')
             image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()).astype(np.uint8)
             
@@ -141,20 +142,22 @@ class Tester:
 
     def infer_tta_6(self):
         threshold = self.find_threshold()
-        #threshold = 74
         print(f'inferencing with threshold = {threshold}')
         
-        
-        #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
-        test_list = []
-        for image_path in test_list:
-            image_name = image_path.split('/')[-1]
-
+        ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
+        ann = pickle.load(ann_file)
+        test_list = ann['val']
+         #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
+         
+        print('Testing on the whole set ... \n')
+        for test_image_name in test_list:
+            print(f"Processing {test_image_name}...")
+            
             #image_ori = cv2.imread(image_path)
             #image_ori = (image_ori[:,:,0]/255.)
-            image_ori = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-            image_ori = cv2.convertScaleAbs(image_ori, alpha=1.0 / image_ori.max())
-            
+            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{test_image_name}', cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
+
             image_flip_0 = cv2.flip(image_ori, 0)
             image_flip_1 = cv2.flip(image_ori, 1)
             image_flip__1 = cv2.flip(image_ori, -1)
@@ -179,10 +182,10 @@ class Tester:
             pred_rotate_180 = cv2.rotate(pred_rotate_180.cpu().numpy(), cv2.ROTATE_180)
 
             pred = np.mean([pred_ori, pred_flip_0, pred_flip_1, pred_flip__1, pred_rotate_90cc, pred_rotate_90c, pred_rotate_180], axis=0)
-            pred = np.stack([pred, pred, pred], axis=2)
 
-            pred[pred >= threshold] = 255
+            pred[pred >= threshold] = 1
             pred[pred < threshold] = 0
-            cv2.imwrite(f'{self.cfgs.output_dir}/submission/{image_name}', pred)
+            pred = pred.astype(np.uint8) * 255
+            cv2.imwrite(f'{self.cfgs.output_dir}/submission/{os.path.splitext(test_image_name)[0] + ".tif"}', pred)
 
         print('done')
