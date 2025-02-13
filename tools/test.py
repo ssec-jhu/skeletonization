@@ -95,6 +95,14 @@ class Tester:
         threshold = thresholds[f1s.argmax()]
         print(f'best f1 score is {f1s.max()} at threshold = {threshold}')
 
+        #from scipy.ndimage import label
+        #for val_image, pred in zip(val_images, preds):
+        #    pred[pred >= threshold] = 1
+        #    pred[pred < threshold] = 0
+        #    labeled_array, num_features = label(pred) # Label the connected components
+        #    if num_features > 1:
+        #        print(f'Number of connected components for {val_image} is: {num_features}')
+
         # write valid results
         diff_pred_tar = list()
         for val_image, pred, target in zip(val_images, preds, targets):
