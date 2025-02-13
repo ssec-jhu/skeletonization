@@ -3,7 +3,7 @@ dataloader:
   batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/TrainingKit'
+    data_folder: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/TrainingKit'
     ann_file: 'dataloader/annotation/dataset4.pkl'
 
 solver:
@@ -24,4 +24,4 @@ model:
   ckpt: None
 
 load_from: null
-output_dir: '../../../OneDrive/Neural Morphology/Simulations/Simulations_16bit_Size1024/output/ex5'
+output_dir: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/output/ex7'
