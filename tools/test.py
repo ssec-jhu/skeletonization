@@ -56,9 +56,6 @@ class Tester:
             #image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
             image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
-            #cv2.imshow('Image after', image_ori)
-            #cv2.waitKey(0)  # Waits indefinitely; use cv2.waitKey(1000) to wait 1 second
-            #cv2.destroyAllWindows()
             target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_image}')[:,:,0] / 255.
 
             image_flip_0 = cv2.flip(image_ori, 0)
@@ -98,42 +95,51 @@ class Tester:
         threshold = thresholds[f1s.argmax()]
         print(f'best f1 score is {f1s.max()} at threshold = {threshold}')
 
+        #from scipy.ndimage import label
+        #for val_image, pred in zip(val_images, preds):
+        #    pred[pred >= threshold] = 1
+        #    pred[pred < threshold] = 0
+        #    labeled_array, num_features = label(pred) # Label the connected components
+        #    if num_features > 1:
+        #        print(f'Number of connected components for {val_image} is: {num_features}')
+
         # write valid results
-        diff_pred_arr = list()
-        diff_target_arr = list()
+        diff_pred_tar = list()
         for val_image, pred, target in zip(val_images, preds, targets):
+            print(f'Writing {val_image} ...')
             image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()).astype(np.uint8)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_orig.tif"}', image_ori)
             
-            pred[pred >= threshold] = 1
-            pred[pred < threshold] = 0
-            pred = pred.astype(np.uint8) * 255
+            pred_bin = pred.copy()
+            pred_bin[pred_bin >= threshold] = 1
+            pred_bin[pred_bin < threshold] = 0
+            pred_bin = (pred_bin * 255).astype(np.uint8)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_pred_bin.tif"}', pred_bin)
+            
+            pred = (pred * 255).astype(np.uint8)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_pred.tif"}', pred)
             
             target = (target * 255).astype(np.uint8)
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_target.tif"}', target)
             
-            cat = np.concatenate([image_ori, pred, target], axis=1)
+            # Analyze the difference between original and binarized prediction
+            diff_pred = np.zeros_like(pred, dtype=np.uint8)
+            diff_pred[pred_bin != pred] = 255
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_diff_pred.tif"}', diff_pred)
             
-            # Set the differences
-            diff = np.zeros_like(target, dtype=np.uint8)
-            diff[((pred == 255) & (target == 255)) | ((pred == 0) & (target == 0))] = 128  # Both have the same value
-            diff[(pred == 255) & (target == 0)] = 255  # Appears in prediction, missing in target
-            diff[(pred == 0) & (target == 255)] = 0      # Missing in prediction, appears in target
-            diff = np.stack([diff] * 3, axis=-1)
+            # Highlight the difference between prediction and target
+            diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
+            diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Appears in prediction, missing in target
+            diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Missing in prediction, appears in target
+            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
+            diff_pred_tar.append(np.sum(np.all(diff == [255, 0, 0], axis=-1)))
             
-            diff_pred = np.stack([pred] * 3, axis=-1).astype(np.uint8)       
-            diff_pred[(pred == 255) & (target == 0)] = [255, 0, 0]  # Appears in prediction, missing in target
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_pred.tif"}', cv2.cvtColor(diff_pred, cv2.COLOR_RGB2BGR))
-            diff_pred_arr.append(np.sum(np.all(diff_pred == [255, 0, 0], axis=-1)))
-
-            diff_target = np.stack([target] * 3, axis=-1).astype(np.uint8)
-            diff_target[(pred == 0) & (target == 255)] = [255, 0, 0]  # Missing in prediction, appears in target
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_target.tif"}', cv2.cvtColor(diff_target, cv2.COLOR_RGB2BGR))
-            diff_target_arr.append(np.sum(np.all(diff_target == [255, 0, 0], axis=-1)))
-            
-            diff = np.concatenate([diff, diff_pred, diff_target], axis=1)
-            
-            cat = np.stack([cat] * 3, axis=-1)
-            cat = np.concatenate([cat, diff], axis=0)
+            # Create a concatenated image for visual inspection
+            cat1 = np.concatenate([image_ori, pred, diff_pred], axis=1)
+            cat1 = np.stack([cat1] * 3, axis=-1).astype(np.uint8)
+            cat2 = np.concatenate([diff, np.stack([pred_bin] * 3, axis=-1).astype(np.uint8), np.stack([target] * 3, axis=-1).astype(np.uint8)], axis=1)
+            cat = np.concatenate([cat1, cat2], axis=0)
             cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
 
         return threshold
@@ -141,20 +147,22 @@ class Tester:
 
     def infer_tta_6(self):
         threshold = self.find_threshold()
-        #threshold = 74
         print(f'inferencing with threshold = {threshold}')
         
-        
-        #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
-        test_list = []
-        for image_path in test_list:
-            image_name = image_path.split('/')[-1]
-
+        ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
+        ann = pickle.load(ann_file)
+        test_list = ann['val']
+         #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
+         
+        print('Testing on the whole set ... \n')
+        for test_image_name in test_list:
+            print(f"Processing {test_image_name}...")
+            
             #image_ori = cv2.imread(image_path)
             #image_ori = (image_ori[:,:,0]/255.)
-            image_ori = cv2.imread(image_path, cv2.IMREAD_UNCHANGED)
-            image_ori = cv2.convertScaleAbs(image_ori, alpha=1.0 / image_ori.max())
-            
+            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{test_image_name}', cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
+
             image_flip_0 = cv2.flip(image_ori, 0)
             image_flip_1 = cv2.flip(image_ori, 1)
             image_flip__1 = cv2.flip(image_ori, -1)
@@ -179,10 +187,10 @@ class Tester:
             pred_rotate_180 = cv2.rotate(pred_rotate_180.cpu().numpy(), cv2.ROTATE_180)
 
             pred = np.mean([pred_ori, pred_flip_0, pred_flip_1, pred_flip__1, pred_rotate_90cc, pred_rotate_90c, pred_rotate_180], axis=0)
-            pred = np.stack([pred, pred, pred], axis=2)
 
-            pred[pred >= threshold] = 255
+            pred[pred >= threshold] = 1
             pred[pred < threshold] = 0
-            cv2.imwrite(f'{self.cfgs.output_dir}/submission/{image_name}', pred)
+            pred = pred.astype(np.uint8) * 255
+            cv2.imwrite(f'{self.cfgs.output_dir}/submission/{os.path.splitext(test_image_name)[0] + ".tif"}', pred)
 
         print('done')
