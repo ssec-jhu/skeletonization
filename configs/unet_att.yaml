@@ -24,4 +24,4 @@ model:
   ckpt: None
 
 load_from: null
-output_dir: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/output/ex7'
+output_dir: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/output/ex8'
