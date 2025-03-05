@@ -52,7 +52,7 @@ class Tester:
         val_images = list()
         
         print('testing on validation set ... ')
-        for val_image in ann['val']:
+        for val_image in ann['val']: #+ ann['train']:
             #image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
             image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
@@ -151,9 +151,9 @@ class Tester:
         
         ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
         ann = pickle.load(ann_file)
-        test_list = ann['val']
-         #test_list = glob(f'{self.cfgs.dataloader.dataset.data_folder}/../../../CIV_Developmental_Images/24hr/Processed/Oriented/*tif')
-         
+        #test_list = ann['val']
+        test_list = []
+        
         print('Testing on the whole set ... \n')
         for test_image_name in test_list:
             print(f"Processing {test_image_name}...")
