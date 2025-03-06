@@ -28,17 +28,17 @@ class Trainer:
             print("MPS is available!")
             if torch.backends.mps.is_built():
                 print("MPS (Metal Performance Shader) is built in!")    
-            device = "mps"
+            cfgs.model.device = "mps"
         elif torch.cuda.is_available(): # Check if PyTorch has access to CUDA (Win or Linux's GPU architecture)
             print("CUDA is available!")
-            device = "cuda"
+            cfgs.model.device = "cuda"
         else:
             print("Only CPU is available!")
-            device = "cpu"
-        print(f"Using device: {device}")
+            cfgs.model.device = "cpu"
+        print(f"Using device: {cfgs.model.device}")
 
         self.cfgs = cfgs
-        self.device = device # cfgs.model.device
+        self.device = cfgs.model.device
         self.train_loader, self.val_loader = build_dataloader(cfgs.dataloader)
         self.model = build_model(cfgs.model)
         self.loss_fn = build_loss(cfgs.solver)

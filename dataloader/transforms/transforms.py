@@ -6,7 +6,7 @@ import albumentations as A
 import pickle
 import imutils
 
-img_size = 1024 # 256
+img_size = 3344 #1024 # 256
 class Normalize(object):
     def __call__(self, sample):
         image, label = sample
