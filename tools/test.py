@@ -38,7 +38,6 @@ class Tester:
 
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
-        #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device('cpu'), weights_only=False)
         ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device(self.device), weights_only=False)
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
@@ -95,54 +94,22 @@ class Tester:
         f1s = np.stack(f1s)
         threshold = thresholds[f1s.argmax()]
         print(f'Best f1 score is {f1s.max()} at threshold = {threshold}')
-
-        ## write valid results
-        #for val_image, pred, target in zip(val_images, preds, targets):
-        #    print(f'Writing {val_image} ...')
-        #    image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
-        #    image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()).astype(np.uint8)
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_orig.tif"}', image_ori)
-        #    
-        #    pred_bin = pred.copy()
-        #    pred_bin[pred_bin >= threshold] = 1
-        #    pred_bin[pred_bin < threshold] = 0
-        #    pred_bin = (pred_bin * 255).astype(np.uint8)
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_pred_bin.tif"}', pred_bin)
-        #    
-        #    pred = (pred * 255).astype(np.uint8)
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_pred.tif"}', pred)
-        #    
-        #    target = (target * 255).astype(np.uint8)
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_target.tif"}', target)
-        #    
-        #    # Analyze the difference between original and binarized prediction
-        #    diff_pred = np.zeros_like(pred, dtype=np.uint8)
-        #    diff_pred[pred_bin != pred] = 255
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_diff_pred.tif"}', diff_pred)
-        #    
-        #    # Highlight the difference between prediction and target
-        #    diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
-        #    diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Appears in prediction, missing in target
-        #    diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Missing in prediction, appears in target
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
-        #    
-        #    # Create a concatenated image for visual inspection
-        #    cat1 = np.concatenate([image_ori, pred, diff_pred], axis=1)
-        #    cat1 = np.stack([cat1] * 3, axis=-1).astype(np.uint8)
-        #    cat2 = np.concatenate([diff, np.stack([pred_bin] * 3, axis=-1).astype(np.uint8), np.stack([target] * 3, axis=-1).astype(np.uint8)], axis=1)
-        #    cat = np.concatenate([cat1, cat2], axis=0)
-        #    cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(val_image)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
-
+        
         return threshold
 
 
     def infer(self):
-        threshold = 0.74 #self.find_threshold()
+        threshold = self.find_threshold()
         print(f'Infering with threshold = {threshold}')
         
-        ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
-        ann = pickle.load(ann_file)
-        infer_list = ann.get('train') + ann.get('val')
+        # ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
+        # ann = pickle.load(ann_file)
+        # infer_list = ann.get('train') + ann.get('val')
+        # infer_list = sorted(infer_list)
+        
+        folder_path = self.cfgs.dataloader.dataset.data_folder + '/../images/'
+        infer_list = [f for f in os.listdir(folder_path) if 'Realistic-SBR-' in f]
+        infer_list = [f.replace('Realistic-SBR-', '') for f in infer_list]
         infer_list = sorted(infer_list)
         
         Im_y = 3334
