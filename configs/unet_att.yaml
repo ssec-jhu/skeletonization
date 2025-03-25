@@ -24,4 +24,4 @@ model:
   ckpt: None
 
 load_from: null
-output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex1'
+output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex3/'

@@ -87,6 +87,7 @@ class Tester:
         f1s = list()
         thresholds = np.stack(list(range(40,80)))/100
         for threshold in tqdm(thresholds):
+            print(f'Calculating f1_score for the threshold = {threshold}')
             preds_ = preds.copy()
             preds_[preds_ >= threshold] = 1
             preds_[preds_ < threshold] = 0
@@ -147,7 +148,7 @@ class Tester:
             for i in range(n_y):
                 for j in range(n_x):
                     tile = image_ori[Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] # Crop the ROI
-                    print("Infering tile: ", i, j)
+                    #print("Infering tile: ", i, j)
                     # Start the infering process
                     tile_flip_0 = cv2.flip(tile, 0)
                     tile_flip_1 = cv2.flip(tile, 1)
