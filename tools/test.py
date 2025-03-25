@@ -163,7 +163,7 @@ class Tester:
                     pred_flip_1 = cv2.flip(pred_flip_1.cpu().numpy(), 1)
                     pred_flip__1 = cv2.flip(pred_flip__1.cpu().numpy(), -1)
                     tile_pred = np.mean([pred_ori, pred_flip_0, pred_flip_1, pred_flip__1], axis=0)
-                    pred_array[i * n_x + j, Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] += tile_pred
+                    pred_array[i * n_x + j, Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] = tile_pred
             # Averaging the result
             non_zero_mask = pred_array != 0  # Shape (n_x * n_y, img_height, img_width)
             non_zero_count = np.sum(non_zero_mask, axis=0)  # Shape (img_height, img_width)
