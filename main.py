@@ -8,8 +8,8 @@ if __name__=='__main__':
         cfgs = yaml.load(yamlfile, Loader=yaml.FullLoader)
         cfgs = edict(cfgs)
 
-    #trainer = Trainer(cfgs)
-    #trainer.train()
+    trainer = Trainer(cfgs)
+    trainer.train()
 
     tester = Tester(cfgs)
     tester.infer()
