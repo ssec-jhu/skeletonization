@@ -120,7 +120,10 @@ class Tester:
         # Calculate tiling coordinates
         n_x = math.ceil(Im_x / T)
         X_coord = np.zeros(n_x, dtype=int)
-        gap_x = math.floor((T * n_x - Im_x) / (n_x - 1))
+        if n_x == 1:
+            gap_x = 0
+        else:
+            gap_x = math.floor((T * n_x - Im_x) / (n_x - 1))
         gap_x_plus_one__amount = T * n_x - Im_x - gap_x * (n_x - 1)
         for i in range(1, n_x):
             if i <= gap_x_plus_one__amount:
@@ -130,7 +133,10 @@ class Tester:
 
         n_y = math.ceil(Im_y / T)
         Y_coord = np.zeros(n_y, dtype=int)
-        gap_y = math.floor((T * n_y - Im_y) / (n_y - 1))
+        if n_y == 1:
+            gap_y = 0
+        else:
+            gap_y = math.floor((T * n_y - Im_y) / (n_y - 1))
         gap_y_plus_one__amount = T * n_y - Im_y - gap_y * (n_y - 1)
         for i in range(1, n_y):
             if i <= gap_y_plus_one__amount:
