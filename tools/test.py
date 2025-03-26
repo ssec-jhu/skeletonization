@@ -27,14 +27,15 @@ class Tester:
             cfgs.model.device = "cuda"
         else:
             print("Only CPU is available!")
-            device = "cpu"
+            cfgs.model.device = "cpu"
         print(f"Using device: {cfgs.model.device}")
 
         self.cfgs = cfgs
+        self.tile_assembly = cfgs.model.tile_assembly
         self.device = cfgs.model.device
         self.model = build_model(cfgs.model)
         Path(f'{self.cfgs.output_dir}/submission').mkdir(parents=True, exist_ok=True)
-        Path(f'{self.cfgs.output_dir}/evaluation').mkdir(parents=True, exist_ok=True)
+        Path(f'{self.cfgs.output_dir}/evaluation_{self.tile_assembly}').mkdir(parents=True, exist_ok=True)
 
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
@@ -100,22 +101,23 @@ class Tester:
 
 
     def infer(self):
-        threshold = self.find_threshold()
+        #threshold = self.find_threshold()
+        threshold = 0.69
         print(f'Infering with threshold = {threshold}')
-        
-        # ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
-        # ann = pickle.load(ann_file)
-        # infer_list = ann.get('train') + ann.get('val')
-        # infer_list = sorted(infer_list)
         
         folder_path = self.cfgs.dataloader.dataset.data_folder + '/../images/'
         infer_list = [f for f in os.listdir(folder_path) if 'Realistic-SBR-' in f]
         infer_list = [f.replace('Realistic-SBR-', '') for f in infer_list]
         infer_list = sorted(infer_list)
         
-        Im_y = 3334
-        Im_x = 3334
-        T = 512 # Tile size     
+        # Get image size and tile size
+        temp_image = cv2.imread(f'{folder_path}/Realistic-SBR-{infer_list[0]}', cv2.IMREAD_UNCHANGED)
+        Im_y, Im_x = temp_image.shape
+        ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
+        ann = pickle.load(ann_file)
+        val_list =  ann['val']
+        temp_tile = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_list[0]}', cv2.IMREAD_UNCHANGED)
+        T, T = temp_tile.shape
 
         # Calculate tiling coordinates
         n_x = math.ceil(Im_x / T)
@@ -144,9 +146,18 @@ class Tester:
             else:
                 Y_coord[i] = int(Y_coord[i-1] + T - gap_y)
         
+        if self.tile_assembly == 'nn': # prepare nearest neighbor map
+            X_Coord = np.tile(X_coord, n_y) + (T-1) / 2
+            Y_Coord = np.repeat(Y_coord, n_x) + (T-1) / 2
+            y_grid, x_grid = np.meshgrid(np.arange(Im_y), np.arange(Im_x), indexing='ij')
+            y_grid = y_grid[..., np.newaxis]
+            x_grid = x_grid[..., np.newaxis]
+            distances = np.sqrt((x_grid - X_Coord) ** 2 + (y_grid - Y_Coord) ** 2)
+            nearest_map = np.argmin(distances, axis=-1)
+        
         for image_name in infer_list:
             print(f'Infering {image_name} ...')
-            image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/../images/Realistic-SBR-{image_name}', cv2.IMREAD_UNCHANGED)
+            image_ori = cv2.imread(f'{folder_path}/Realistic-SBR-{image_name}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
 
             # Inference by tiles
@@ -171,46 +182,58 @@ class Tester:
                     pred_flip__1 = cv2.flip(pred_flip__1.cpu().numpy(), -1)
                     tile_pred = np.mean([pred_ori, pred_flip_0, pred_flip_1, pred_flip__1], axis=0)
                     pred_array[i * n_x + j, Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] = tile_pred
+                    
             # Averaging the result
             non_zero_mask = pred_array != 0  # Shape (n_x * n_y, img_height, img_width)
             non_zero_count = np.sum(non_zero_mask, axis=0)  # Shape (img_height, img_width)
             non_zero_count[non_zero_count == 0] = 1  # Prevent division by zero
-            non_zero_sum = np.sum(pred_array * non_zero_mask, axis=0)  # Shape (img_height, img_width)
-            pred = non_zero_sum / non_zero_count  # Shape (img_height, img_width)
-
+            if self.tile_assembly == 'mean':
+                non_zero_sum = np.sum(pred_array * non_zero_mask, axis=0)  # Shape (img_height, img_width)
+                pred = non_zero_sum / non_zero_count  # Shape (img_height, img_width)
+            elif self.tile_assembly == 'max':
+                pred = np.max(pred_array * non_zero_mask, axis=0)
+            elif self.tile_assembly == 'nn': # nearest neighbor
+                pred = np.zeros((Im_y, Im_x), dtype=np.float32)
+                for idx in range(n_y * n_x):
+                    pred[nearest_map == idx] = pred_array[idx, nearest_map == idx]
+            else:
+                pred = np.zeros((Im_y, Im_x), dtype=np.float32)
+                raise ValueError(f"Unknown tile assembly method: {self.tile_assembly}")
+            
             # Saving results
+            evaluation_folder = 'evaluation_' + self.tile_assembly
             image_ori = (image_ori * 255).astype(np.uint8)
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_orig.tif"}', image_ori)
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_orig.tif"}', image_ori)
             
             pred_bin = pred.copy()
             pred_bin[pred_bin >= threshold] = 1
             pred_bin[pred_bin < threshold] = 0
             pred_bin = (pred_bin * 255).astype(np.uint8)
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_pred_bin.tif"}', pred_bin)
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_pred_bin.tif"}', pred_bin)
             
             pred = (pred * 255).astype(np.uint8)
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_pred.tif"}', pred)
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_pred.tif"}', pred)
             target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/../images/Skeleton{image_name[1:]}')[:,:,0]
             #target = (target * 255).astype(np.uint8)
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
             
             # Analyze the difference between original and binarized prediction
             diff_pred = np.zeros_like(pred, dtype=np.uint8)
             diff_pred[pred_bin != pred] = 255
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_diff_pred.tif"}', diff_pred)
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff_pred.tif"}', diff_pred)
             
             # Highlight the difference between prediction and target
             diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
             diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Green: appears in prediction, missing in target
             diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Red: issing in prediction, appears in target
-            cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
+            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
             
             # # Create a concatenated image for visual inspection
             # cat1 = np.concatenate([image_ori, pred, diff_pred], axis=1)
             # cat1 = np.stack([cat1] * 3, axis=-1).astype(np.uint8)
             # cat2 = np.concatenate([diff, np.stack([pred_bin] * 3, axis=-1).astype(np.uint8), np.stack([target] * 3, axis=-1).astype(np.uint8)], axis=1)
             # cat = np.concatenate([cat1, cat2], axis=0)
-            # cv2.imwrite(f'{self.cfgs.output_dir}/evaluation/{os.path.splitext(image_name)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
+            # cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
 
         print('Done.')
     

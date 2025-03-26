@@ -4,7 +4,7 @@ dataloader:
   dataset:
     name: 'pixel'
     data_folder: '/Users/vkluzner/OneDrive/NeuralMorphology/Simulations_16bit_Size3334/TrainingKit'
-    ann_file: 'dataloader/annotation/dataset5.pkl'
+    ann_file: 'dataloader/annotation/dataset7.pkl'
 
 solver:
   loss: dice
@@ -22,6 +22,7 @@ model:
   device: 'none'
   mode: 'train'
   ckpt: None
+  tile_assembly: 'mean' # or 'max' or 'nn'
 
 load_from: null
-output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology//Simulations_16bit_Size3334/output/ex1/'
+output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology//Simulations_16bit_Size3334/output/ex9/'

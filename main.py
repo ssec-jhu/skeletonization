@@ -4,7 +4,7 @@ import yaml
 from easydict import EasyDict as edict
 
 if __name__=='__main__':
-    with open('configs/unet_att_cuda.yaml') as yamlfile:
+    with open('configs/unet_att.yaml') as yamlfile:
         cfgs = yaml.load(yamlfile, Loader=yaml.FullLoader)
         cfgs = edict(cfgs)
 
