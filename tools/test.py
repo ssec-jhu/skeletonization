@@ -34,6 +34,7 @@ class Tester:
 
         self.cfgs = cfgs
         self.tile_assembly = cfgs.model.tile_assembly
+        self.threshold = cfgs.model.threshold
         self.device = cfgs.model.device
         self.model = build_model(cfgs.model)
         Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
@@ -109,8 +110,16 @@ class Tester:
 
     def test(self):
         logging.info(PrettyLog(self.cfgs))
-        threshold = self.find_threshold()
-        #threshold = 0.69
+        
+        if self.threshold == 'none':
+            logging.info(f'No threshold provided. Finding threshold ...')
+            print('No threshold provided. Finding threshold ...')
+            threshold = self.find_threshold()
+        else:
+            logging.info(f'Using threshold = {self.threshold}')
+            print(f'Using threshold = {self.threshold}')
+            threshold = self.threshold
+
         logging.info(f'Infering with threshold = {threshold}')
         print(f'Infering with threshold = {threshold}')
         

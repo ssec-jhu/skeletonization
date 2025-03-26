@@ -22,6 +22,7 @@ model:
   mode: 'train'
   ckpt: None
   tile_assembly: 'mean' # or 'max' or 'nn'
+  threshold: 'none' # or, for example, 0.7
 
 load_from: null
 output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex7/'
