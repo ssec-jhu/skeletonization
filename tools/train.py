@@ -5,17 +5,11 @@ import logging
 
 sys.path.append('.')
 from model import build_model
+from model import PrettyLog
 from dataloader import build_dataloader
 from solver import build_loss, build_optimizer, build_scheduler
-import pprint
 from pathlib import Path
 from sklearn.metrics import f1_score
-
-class PrettyLog():
-    def __init__(self, obj):
-        self.obj = obj
-    def __repr__(self):
-        return pprint.pformat(self.obj)
 
 class Trainer:
     def __init__(self, cfgs):

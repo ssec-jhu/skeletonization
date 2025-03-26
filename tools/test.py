@@ -7,6 +7,7 @@ import logging
 
 sys.path.append('.')
 from model import build_model
+from model import PrettyLog
 from pathlib import Path
 from glob import glob
 import cv2
@@ -106,7 +107,8 @@ class Tester:
         return threshold
 
 
-    def infer(self):
+    def test(self):
+        logging.info(PrettyLog(self.cfgs))
         threshold = self.find_threshold()
         #threshold = 0.69
         logging.info(f'Infering with threshold = {threshold}')
