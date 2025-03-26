@@ -10,9 +10,6 @@ from solver import build_loss, build_optimizer, build_scheduler
 import pprint
 from pathlib import Path
 from sklearn.metrics import f1_score
-import cv2
-import copy
-import numpy as np
 
 class PrettyLog():
     def __init__(self, obj):

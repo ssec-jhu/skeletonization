@@ -1,4 +1,3 @@
-from operator import mod
 from .unet_att import UnetAttention
 
 def build_model(cfg):
