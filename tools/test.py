@@ -3,6 +3,7 @@ import torch
 import sys
 import math
 from tqdm import tqdm
+import logging
 
 sys.path.append('.')
 from model import build_model
@@ -34,9 +35,9 @@ class Tester:
         self.tile_assembly = cfgs.model.tile_assembly
         self.device = cfgs.model.device
         self.model = build_model(cfgs.model)
-        Path(f'{self.cfgs.output_dir}/submission').mkdir(parents=True, exist_ok=True)
-        Path(f'{self.cfgs.output_dir}/evaluation_{self.tile_assembly}').mkdir(parents=True, exist_ok=True)
-
+        Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(filename=f'{cfgs.output_dir}log_testing.txt', level=logging.INFO)
+        
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
         ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth', map_location=torch.device(self.device), weights_only=False)
@@ -50,9 +51,11 @@ class Tester:
         preds = list()
         targets = list()
         val_images = list()
-        
-        print('testing on validation set ... ')
+
+        logging.info(f'Calculatiing "soft" predictions... ')
+        print('Calculatiing "soft" predictions... ')
         for val_image in ann['val']:
+            logging.info(f'Infering {val_image} ...')
             print(f'Infering {val_image} ...')
             #image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}')[:,:,0] / 255.
             image_ori = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train_shape/{val_image}', cv2.IMREAD_UNCHANGED)
@@ -83,11 +86,13 @@ class Tester:
         
         preds = np.stack(preds)
         targets = np.stack(targets)
-
+        
+        logging.info(f'Finding threshold ...')
         print('Finding threshold ... ')
         f1s = list()
         thresholds = np.stack(list(range(40,80)))/100
         for threshold in tqdm(thresholds):
+            logging.info(f'Calculating f1_score for the threshold = {threshold}')
             print(f'Calculating f1_score for the threshold = {threshold}')
             preds_ = preds.copy()
             preds_[preds_ >= threshold] = 1
@@ -95,14 +100,16 @@ class Tester:
             f1s.append(f1_score(preds_.reshape(-1), targets.reshape(-1)))
         f1s = np.stack(f1s)
         threshold = thresholds[f1s.argmax()]
-        print(f'Best f1 score is {f1s.max()} at threshold = {threshold}')
+        logging.info(f'Finished threshold finding. Best f1 score is {f1s.max()} at threshold = {threshold}')
+        print(f'Finished threshold finding. Best f1 score is {f1s.max()} at threshold = {threshold}')
         
         return threshold
 
 
     def infer(self):
-        #threshold = self.find_threshold()
-        threshold = 0.69
+        threshold = self.find_threshold()
+        #threshold = 0.69
+        logging.info(f'Infering with threshold = {threshold}')
         print(f'Infering with threshold = {threshold}')
         
         folder_path = self.cfgs.dataloader.dataset.data_folder + '/../images/'
@@ -154,8 +161,10 @@ class Tester:
             x_grid = x_grid[..., np.newaxis]
             distances = np.sqrt((x_grid - X_Coord) ** 2 + (y_grid - Y_Coord) ** 2)
             nearest_map = np.argmin(distances, axis=-1)
-        
+
+        Path(f'{self.cfgs.output_dir}/evaluation_{self.tile_assembly}').mkdir(parents=True, exist_ok=True)
         for image_name in infer_list:
+            logging.info(f'Infering {image_name} ...')
             print(f'Infering {image_name} ...')
             image_ori = cv2.imread(f'{folder_path}/Realistic-SBR-{image_name}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
@@ -165,7 +174,6 @@ class Tester:
             for i in range(n_y):
                 for j in range(n_x):
                     tile = image_ori[Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] # Crop the ROI
-                    #print("Infering tile: ", i, j)
                     # Start the infering process
                     tile_flip_0 = cv2.flip(tile, 0)
                     tile_flip_1 = cv2.flip(tile, 1)
@@ -217,10 +225,10 @@ class Tester:
             #target = (target * 255).astype(np.uint8)
             cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
             
-            # Analyze the difference between original and binarized prediction
-            diff_pred = np.zeros_like(pred, dtype=np.uint8)
-            diff_pred[pred_bin != pred] = 255
-            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff_pred.tif"}', diff_pred)
+            ## Analyze the difference between original and binarized prediction
+            #diff_pred = np.zeros_like(pred, dtype=np.uint8)
+            #diff_pred[pred_bin != pred] = 255
+            #cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff_pred.tif"}', diff_pred)
             
             # Highlight the difference between prediction and target
             diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
@@ -235,6 +243,7 @@ class Tester:
             # cat = np.concatenate([cat1, cat2], axis=0)
             # cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
 
+        logging.info(f'Done.')
         print('Done.')
     
     
@@ -248,6 +257,7 @@ class Tester:
         test_list = []
         
         print('Testing on the whole set ... \n')
+        Path(f'{self.cfgs.output_dir}/submission').mkdir(parents=True, exist_ok=True)
         for test_image_name in test_list:
             print(f"Processing {test_image_name}...")
             

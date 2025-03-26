@@ -42,7 +42,7 @@ class Trainer:
         self.optimizer = build_optimizer(cfgs.solver, self.model)
         self.scheduler = build_scheduler(cfgs.solver, self.optimizer)
         Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=f'{cfgs.output_dir}log.txt', level=logging.INFO)
+        logging.basicConfig(filename=f'{cfgs.output_dir}log_training.txt', level=logging.INFO)
 
         if cfgs.load_from is not None:
             print(f'load ckpt from {cfgs.load_from}')
