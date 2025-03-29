@@ -12,5 +12,6 @@ if __name__=='__main__':
     trainer.train()
 
     tester = Tester(cfgs)
-    tester.infer()
+    tester.test()
+    
     print()
