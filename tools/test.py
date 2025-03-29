@@ -38,7 +38,9 @@ class Tester:
         self.device = cfgs.model.device
         self.model = build_model(cfgs.model)
         Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=f'{cfgs.output_dir}log_testing.txt', level=logging.INFO)
+        evaluation_folder = 'evaluation_' + self.tile_assembly
+        Path(f'{self.cfgs.output_dir}/{evaluation_folder}').mkdir(parents=True, exist_ok=True)
+        logging.basicConfig(filename=f'{cfgs.output_dir}log_testing_{self.tile_assembly}.txt', level=logging.INFO)
         
         print(f'load ckpt from {cfgs.output_dir}')
         #ckpt = torch.load(f'{cfgs.output_dir}/ckpt.pth')
@@ -173,10 +175,9 @@ class Tester:
             distances = np.sqrt((x_grid - X_Coord) ** 2 + (y_grid - Y_Coord) ** 2)
             nearest_map = np.argmin(distances, axis=-1)
 
-        Path(f'{self.cfgs.output_dir}/evaluation_{self.tile_assembly}').mkdir(parents=True, exist_ok=True)
         for image_name in infer_list:
-            logging.info(f'Infering {image_name} ...')
-            print(f'Infering {image_name} ...')
+            logging.info(f'Inferring {image_name} ...')
+            print(f'Inferring {image_name} ...')
             image_ori = cv2.imread(f'{folder_path}/Realistic-SBR-{image_name}', cv2.IMREAD_UNCHANGED)
             image_ori = cv2.convertScaleAbs(image_ori, alpha=255.0 / image_ori.max()) / 255.
 
@@ -185,7 +186,7 @@ class Tester:
             for i in range(n_y):
                 for j in range(n_x):
                     tile = image_ori[Y_coord[i]:(Y_coord[i] + T), X_coord[j]:(X_coord[j] + T)] # Crop the ROI
-                    # Start the infering process
+                    # Start the inferring process
                     tile_flip_0 = cv2.flip(tile, 0)
                     tile_flip_1 = cv2.flip(tile, 1)
                     tile_flip__1 = cv2.flip(tile, -1)
