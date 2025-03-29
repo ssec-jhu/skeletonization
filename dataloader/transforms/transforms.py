@@ -5,14 +5,13 @@ from torchvision.transforms import Compose
 import albumentations as A
 import pickle
 import imutils
-
-img_size = 1024 # 256
 class Normalize(object):
     def __call__(self, sample):
         image, label = sample
         image = image / 255.
         image = np.expand_dims(image, axis=0)
-
+        img_size = image.shape[0]
+        
         # kernel = np.ones((5,5), np.uint8)
         # label = cv2.dilate(label, kernel, iterations=1)
 
@@ -154,7 +153,8 @@ class Shift(object):
 
     def shift_left(self, image, label, extLeft):
         shift_left = random.randint(0, extLeft)
-
+        img_size = image.shape[0]
+        
         image_clipped = image[:, shift_left:]
         label_clipped = label[:, shift_left:]
         pad = np.zeros((img_size, shift_left))
@@ -165,6 +165,7 @@ class Shift(object):
         return image_shifted, label_shifted
 
     def shift_right(self, image, label, extRight):
+        img_size = image.shape[0]
         shift_right = random.randint(extRight, img_size-1)
 
         image_clipped = image[:, :shift_right]
@@ -178,7 +179,8 @@ class Shift(object):
 
     def shift_top(self, image, label, extTop):
         shift_top = random.randint(0, extTop)
-
+        img_size = image.shape[0]
+        
         image_clipped = image[shift_top:, :]
         label_clipped = label[shift_top:, :]
         padd = np.zeros((shift_top, img_size))
@@ -189,6 +191,7 @@ class Shift(object):
         return image_shifted, label_shifted
 
     def shift_bot(self, image, label, extBot):
+        img_size = image.shape[0]
         shift_bot = random.randint(extBot, img_size)
         padd = np.zeros((img_size-shift_bot,img_size))
 
@@ -205,7 +208,8 @@ class Shift2(object):
     def __call__(self, sample):
         image, label = sample
         extLeft, extRight, extTop, extBot = self.get_extreme_points(image)
-
+        img_size = image.shape[0]
+        
         # crop
         image_cropped = image[extTop:extBot, extLeft:extRight]
         label_cropped = label[extTop:extBot, extLeft:extRight]
@@ -237,6 +241,7 @@ class Shift2(object):
         # extTop = tuple(c[c[:, :, 1].argmin()][0])[1]
         # extBot = tuple(c[c[:, :, 1].argmax()][0])[1]
 
+        img_size = image.shape[0]
         extLeft = max(0, tuple(c[c[:, :, 0].argmin()][0])[0] - 5)
         extRight = min(img_size, tuple(c[c[:, :, 0].argmax()][0])[0] + 5)
         extTop = max(0, tuple(c[c[:, :, 1].argmin()][0])[1] - 5)

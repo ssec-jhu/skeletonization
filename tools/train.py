@@ -5,20 +5,11 @@ import logging
 
 sys.path.append('.')
 from model import build_model
+from model import PrettyLog
 from dataloader import build_dataloader
 from solver import build_loss, build_optimizer, build_scheduler
-import pprint
 from pathlib import Path
 from sklearn.metrics import f1_score
-import cv2
-import copy
-import numpy as np
-
-class PrettyLog():
-    def __init__(self, obj):
-        self.obj = obj
-    def __repr__(self):
-        return pprint.pformat(self.obj)
 
 class Trainer:
     def __init__(self, cfgs):
@@ -28,24 +19,24 @@ class Trainer:
             print("MPS is available!")
             if torch.backends.mps.is_built():
                 print("MPS (Metal Performance Shader) is built in!")    
-            device = "mps"
+            cfgs.model.device = "mps"
         elif torch.cuda.is_available(): # Check if PyTorch has access to CUDA (Win or Linux's GPU architecture)
             print("CUDA is available!")
-            device = "cuda"
+            cfgs.model.device = "cuda"
         else:
             print("Only CPU is available!")
-            device = "cpu"
-        print(f"Using device: {device}")
+            cfgs.model.device = "cpu"
+        print(f"Using device: {cfgs.model.device}")
 
         self.cfgs = cfgs
-        self.device = device # cfgs.model.device
+        self.device = cfgs.model.device
         self.train_loader, self.val_loader = build_dataloader(cfgs.dataloader)
         self.model = build_model(cfgs.model)
         self.loss_fn = build_loss(cfgs.solver)
         self.optimizer = build_optimizer(cfgs.solver, self.model)
         self.scheduler = build_scheduler(cfgs.solver, self.optimizer)
         Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
-        logging.basicConfig(filename=f'{cfgs.output_dir}log.txt', level=logging.INFO)
+        logging.basicConfig(filename=f'{cfgs.output_dir}log_training.txt', level=logging.INFO)
 
         if cfgs.load_from is not None:
             print(f'load ckpt from {cfgs.load_from}')

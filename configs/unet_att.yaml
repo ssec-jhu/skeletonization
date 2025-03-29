@@ -1,15 +1,15 @@
 dataloader:
   num_workers: 0
-  batch_size: 2
+  batch_size: 16
   dataset:
     name: 'pixel'
-    data_folder: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/TrainingKit'
-    ann_file: 'dataloader/annotation/dataset4.pkl'
+    data_folder: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/TrainingKit'
+    ann_file: 'dataloader/annotation/dataset7.pkl'
 
 solver:
   loss: dice
   optimizer: 'sgd'
-  max_epoch: 20
+  max_epoch: 100
   base_lr: 0.02
   momentum: 0.9
   weight_decay: 1.0e-5
@@ -19,9 +19,10 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'none'
   mode: 'train'
   ckpt: None
+  tile_assembly: 'nn' # 'mean', 'max' or 'nn'
+  threshold: 0.69 # 'none' or number between 0 and 1
 
 load_from: null
-output_dir: '../../../OneDrive/NeuralMorphology/Simulations/Simulations_16bit_Size1024/output/ex8'
+output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex7/'
