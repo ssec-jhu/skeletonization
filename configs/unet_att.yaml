@@ -24,9 +24,9 @@ model:
   test: True # True to test the model after training
   ckpt: None
   tile_assembly: 'nn' # 'nn' or 'mean' or 'max'
-  threshold: 'none' # 'none' or number between 0 and 1
+  threshold: 0.66 # 'none' or number between 0 and 1
   thresh_calc_method: 'global' # 'global' or 'tiles'
-  thresh_one_cc: True # Lower threshold to get only one connected component
+  thresh_one_cc: False # Lower threshold to get only one connected component
 
 load_from: null
 output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex7/'

@@ -37,6 +37,7 @@ class Tester:
         self.threshold = cfgs.model.threshold
         self.calc_thresh_method = cfgs.model.thresh_calc_method
         self.thresh_one_cc = cfgs.model.thresh_one_cc
+        self.output_dir = cfgs.output_dir
         self.device = cfgs.model.device
         self.model = build_model(cfgs.model)
         Path(self.cfgs.output_dir).mkdir(parents=True, exist_ok=True)
@@ -50,8 +51,39 @@ class Tester:
         self.model.load_state_dict(ckpt['model_state_dict'])
         self.model.eval()
 
-    def find_threshold_for_one_cc(self, threshold):
+    def find_threshold_for_one_cc(self, threshold, preds):
         
+        preds = list()
+        threshold = int(threshold * 255)
+        folder_path = self.output_dir + '/evaluation_' + self.tile_assembly + '_' + self.calc_thresh_method
+        files = os.listdir(folder_path)
+        pred_files = [f for f in files if '_pred.' in f and os.path.isfile(os.path.join(folder_path, f))]
+        pred_files = sorted(pred_files, reverse = True)  # Sort in reverse order to start from the highest threshold
+        for pred_file in pred_files:
+            temp_thresh = threshold
+            pred = cv2.imread(f'{folder_path}/{pred_file}', cv2.IMREAD_UNCHANGED)
+            preds.append(pred)
+            pred_bin = pred.copy()
+            pred_bin[pred_bin > temp_thresh] = 255
+            pred_bin[pred_bin <= temp_thresh] = 0
+            num_labels, labels = cv2.connectedComponents(pred_bin) # Label connected components
+            inverted_image = cv2.bitwise_not(pred_bin)
+            num_loops, labels = cv2.connectedComponents(inverted_image)
+            print(f'{pred_file}: {temp_thresh}: num_skeletons = {num_labels-1}, num_loops = {num_loops-1} ', end=" ")
+            
+            while num_labels-1 >= 2 and temp_thresh > 55: # there are more than one sub-skeleton
+                temp_thresh -= 1
+                pred_bin = pred.copy()
+                pred_bin[pred_bin > temp_thresh] = 255
+                pred_bin[pred_bin <= temp_thresh] = 0
+                num_labels, labels = cv2.connectedComponents(pred_bin)
+                
+            inverted_image = cv2.bitwise_not(pred_bin)
+            num_loops, labels = cv2.connectedComponents(inverted_image)
+            print(f"Final threshold = {temp_thresh}, num_skeletons = {num_labels-1}, num_loops = {num_loops-1}")
+            prefix = pred_file.split('_')[0]  # Extract the prefix of the filename
+            cv2.imwrite(f'{folder_path}/{prefix + "_pred_bin_1cc.tif"}', pred_bin)
+                
         return threshold
     
 
@@ -270,11 +302,10 @@ class Tester:
             logging.info(f'Using threshold = {self.threshold}')
             print(f'Using threshold = {self.threshold}')
             threshold = self.threshold
-    
+        
         if self.thresh_one_cc:
-            logging.info(f'Lowering threshold to get one connected component...')
             print(f'Lowering threshold to get one connected component...')
-            threshold = self.find_threshold_for_one_cc(threshold)
+            threshold = self.find_threshold_for_one_cc(threshold, preds=[])
             
         logging.info(f'Infering with threshold = {threshold}')
         print(f'Infering with threshold = {threshold}')
@@ -285,14 +316,13 @@ class Tester:
         infer_list = [f.replace('Realistic-SBR-', '') for f in infer_list]
         infer_list = sorted(infer_list)
         temp_image = cv2.imread(f'{folder_path}/Realistic-SBR-{infer_list[0]}', cv2.IMREAD_UNCHANGED)
-        
         ann_file = open(self.cfgs.dataloader.dataset.ann_file, "rb")
         ann = pickle.load(ann_file)
         val_list =  ann['val']
         temp_tile = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/img_train2/{val_list[0]}', cv2.IMREAD_UNCHANGED)
-        
         Im_y, Im_x, n_x, n_y, T, X_coord, Y_coord, nearest_map = self.get_tiling_attributes(temp_image, temp_tile)
         
+        preds = list()
         for image_name in infer_list:
             logging.info(f'Inferring {image_name} ...')
             print(f'Inferring {image_name} ...')
@@ -355,24 +385,30 @@ class Tester:
             #target = (target * 255).astype(np.uint8)
             cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
             
-            ## Analyze the difference between original and binarized prediction
-            #diff_pred = np.zeros_like(pred, dtype=np.uint8)
-            #diff_pred[pred_bin != pred] = 255
-            #cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff_pred.tif"}', diff_pred)
-            
             # Highlight the difference between prediction and target
             diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
             diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Green: appears in prediction, missing in target
             diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Red: issing in prediction, appears in target
             cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
-            
-            # # Create a concatenated image for visual inspection
-            # cat1 = np.concatenate([image_ori, pred, diff_pred], axis=1)
-            # cat1 = np.stack([cat1] * 3, axis=-1).astype(np.uint8)
-            # cat2 = np.concatenate([diff, np.stack([pred_bin] * 3, axis=-1).astype(np.uint8), np.stack([target] * 3, axis=-1).astype(np.uint8)], axis=1)
-            # cat = np.concatenate([cat1, cat2], axis=0)
-            # cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + ".tif"}', cv2.cvtColor(cat, cv2.COLOR_RGB2BGR))
-
+        
+        #if self.thresh_one_cc:
+        #    logging.info(f'Lowering threshold to get one connected component...')
+        #    print(f'Lowering threshold to get one connected component...')
+        #    threshold = self.find_threshold_for_one_cc(threshold, preds)
+        #    
+        #    if self.find_threshold_for_one_cc:
+        #        preds.append(pred) # For 1CC analysis
+        #     # preds = np.stack(preds)
+        #     
+        #    logging.info(f'Infering with threshold = {threshold} for one connected component...')
+        #    print(f'Infering with threshold = {threshold} for one connected component...')
+        #    for i in range(len(preds)):
+        #        pred_bin = preds[i].copy()
+        #        pred_bin[pred_bin >= threshold] = 1
+        #        pred_bin[pred_bin < threshold] = 0
+        #        pred_bin = (pred_bin * 255).astype(np.uint8)
+        #        cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_pred_bin_1cc.tif"}', pred_bin)
+        
         logging.info(f'Done.')
         print('Done.')
     
