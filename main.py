@@ -8,9 +8,9 @@ if __name__=='__main__':
         cfgs = yaml.load(yamlfile, Loader=yaml.FullLoader)
         cfgs = edict(cfgs)
 
-    if cfgs.model.train == True:
-        trainer = Trainer(cfgs)
-        trainer.train()
+    #if cfgs.model.train == True:
+    #    trainer = Trainer(cfgs)
+    #    trainer.train()
 
     if cfgs.model.test == True:
         tester = Tester(cfgs)

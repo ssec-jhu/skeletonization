@@ -3,7 +3,7 @@ dataloader:
   batch_size: 16
   dataset:
     name: 'pixel'
-    data_folder: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/TrainingKit'
+    data_folder: '/home/idies/workspace/ssec_neural_morphology/SimulationsNew_Tif3334/TrainingKit'
     ann_file: 'dataloader/annotation/dataset7.pkl'
 
 solver:
@@ -29,4 +29,4 @@ model:
   thresh_one_cc: False # Lower threshold to get only one connected component
 
 load_from: null
-output_dir: '/home/idies/workspace/ssec_neural_morphology/Simulations_16bit_Size3334/output/ex7/'
+output_dir: '/home/idies/workspace/ssec_neural_morphology/SimulationsNew_Tif3334/output/ex10/'

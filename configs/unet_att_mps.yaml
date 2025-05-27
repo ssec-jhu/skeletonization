@@ -3,7 +3,7 @@ dataloader:
   batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: '/Users/vkluzner/OneDrive/NeuralMorphology/Simulations_16bit_Size3334/TrainingKit'
+    data_folder: '/Users/vkluzner/OneDrive/NeuralMorphology/SimulationsNew_Tif3334/TrainingKit'
     ann_file: 'dataloader/annotation/dataset7.pkl'
 
 solver:
@@ -29,4 +29,4 @@ model:
   thresh_one_cc: False # Lower threshold to get only one connected component
   
 load_from: null
-output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology//Simulations_16bit_Size3334/output/ex9/'
+output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology/SimulationsNew_Tif3334/output/ex10/'
