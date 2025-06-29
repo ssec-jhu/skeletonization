@@ -3,7 +3,7 @@ dataloader:
   batch_size: 2
   dataset:
     name: 'pixel'
-    data_folder: '/Users/vkluzner/OneDrive/NeuralMorphology/Simulations_16bit_Size3334/TrainingKit'
+    data_folder: '/Users/vkluzner/OneDrive/NeuralMorphology/SimulationsNew_Tif3334/TrainingKit'
     ann_file: 'dataloader/annotation/dataset7.pkl'
 
 solver:
@@ -19,11 +19,14 @@ solver:
 
 model:
   name: 'unet_att'
-  device: 'none'
-  mode: 'train'
+  device: 'none' # 'cuda' for GPU, 'mps' for Mac, may leave 'none' (identified on-fly) or specify like 'cuda:0'
+  train: False # True to train, False to load pre-trained model and then test
+  test: True # True to test the model after training
   ckpt: None
-  tile_assembly: 'mean' # or 'max' or 'nn'
-  threshold: 'none' # or, for example, 0.7
-
+  tile_assembly: 'nn' # 'nn' or 'mean' or 'max'
+  threshold: 0.66 # 'none' or number between 0 and 1
+  thresh_calc_method: 'global' # 'global' or 'tiles'
+  thresh_one_cc: False # Lower threshold to get only one connected component
+  
 load_from: null
-output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology//Simulations_16bit_Size3334/output/ex9/'
+output_dir: '/Users/vkluzner/OneDrive/NeuralMorphology/SimulationsNew_Tif3334/output/ex10/'
