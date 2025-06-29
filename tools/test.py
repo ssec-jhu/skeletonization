@@ -381,15 +381,15 @@ class Tester:
             
             pred = (pred * 255).astype(np.uint8)
             cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_pred.tif"}', pred)
-            target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/../images/Skeleton{image_name[1:]}')[:,:,0]
-            #target = (target * 255).astype(np.uint8)
-            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
+            # target = cv2.imread(f'{self.cfgs.dataloader.dataset.data_folder}/../images/Skeleton{image_name[1:]}')[:,:,0]
+            # #target = (target * 255).astype(np.uint8)
+            # cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_target.tif"}', target.astype(np.uint8))
             
-            # Highlight the difference between prediction and target
-            diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
-            diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Green: appears in prediction, missing in target
-            diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Red: issing in prediction, appears in target
-            cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
+            # # Highlight the difference between prediction and target
+            # diff = np.stack([pred_bin] * 3, axis=-1).astype(np.uint8)       
+            # diff[(pred_bin == 255) & (target == 0)] = [0, 255, 0]  # Green: appears in prediction, missing in target
+            # diff[(pred_bin == 0) & (target == 255)] = [255, 0, 0]  # Red: issing in prediction, appears in target
+            # cv2.imwrite(f'{self.cfgs.output_dir}/{evaluation_folder}/{os.path.splitext(image_name)[0] + "_diff.tif"}', cv2.cvtColor(diff, cv2.COLOR_RGB2BGR))
         
         #if self.thresh_one_cc:
         #    logging.info(f'Lowering threshold to get one connected component...')
